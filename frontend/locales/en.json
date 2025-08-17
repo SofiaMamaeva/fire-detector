@@ -1,0 +1,42 @@
+{
+  "title": "Fire Detection",
+  "subtitle": "Neural Network Algorithms for Wildfire Monitoring • YOLOv8n & U-Net",
+  "team": "Team “as.cii”",
+
+  "upload_title": "Upload an image",
+  "drop_here": "Drop a file here",
+  "or_click": "or click to choose",
+  "no_file": "No file selected",
+
+  "model_label": "Model",
+  "model_yolo": "YOLOv8n",
+  "model_unet": "U-Net",
+
+  "conf_label": "Confidence threshold",
+  "run_btn": "Run detection",
+  "running": "Processing…",
+
+  "result_title": "Result",
+  "fit2": "Fit",
+  "one_to_one": "1:1",
+
+  "model_used": "Model",
+  "img_size": "Size",
+  "conf_used": "Threshold",
+  "time_used": "Time",
+
+  "bboxes_title": "Detected objects",
+  "label_col": "Class",
+  "w_col": "W",
+  "h_col": "H",
+  "conf_col": "Conf",
+  "no_detections": "No objects detected",
+
+  "repo_gitflic": "Source on GitFlic",
+  "gitflic": "Source on GitFlic",
+
+  "expand_table": "Expand",
+  "collapse_table": "Collapse",
+
+  "footer": "Project & Technology Practicum • 2025 • “Neural Network Algorithms for Wildfire Monitoring”"
+}

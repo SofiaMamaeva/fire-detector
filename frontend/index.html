@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fire Detection</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <div class="brand">
+        <div class="brand__text">
+          <div class="brand__title" data-i18n="title">Fire Detection</div>
+          <!-- Подзаголовок студенческого проекта -->
+          <div class="brand__subtitle" data-i18n="subtitle">
+            Нейросетевые алгоритмы мониторинга лесных пожаров • YOLOv8n & U-Net
+          </div>
+        </div>
+      </div>
+
+      <div class="header__controls">
+        <!-- ССЫЛКА НА GITHUB (замените href на ваш репозиторий) -->
+        <a class="gh" id="gh-header"
+          href="https://gitflic.ru/project/bmstu-iu9/ptp2025-x4-ascii"
+          target="_blank" rel="noopener"
+          aria-label="Открыть репозиторий на GitFlic" data-i18n="repo_gitflic">Проект на GitFlic</a>
+
+        <div class="lang-switch">
+          <button id="lang-ru" class="lang-btn active">RU</button>
+          <button id="lang-en" class="lang-btn">EN</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main">
+    <section class="panel grid">
+      <!-- Левая колонка -->
+      <div class="card">
+        <h2 class="card__title" data-i18n="upload_title">Загрузите изображение</h2>
+
+        <!-- Дропзона стала доступной кнопкой -->
+        <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Загрузить файл: нажмите Enter или пробел, либо перетащите изображение">
+          <div class="dropzone__icon">⬆︎</div>
+          <div class="dropzone__text">
+            <strong data-i18n="drop_here">Перетащите файл сюда</strong>
+            <span data-i18n="or_click">или нажмите для выбора</span>
+          </div>
+          <input id="file-input" type="file" accept="image/*" hidden />
+        </div>
+
+        <!-- Современный статус файла (создаётся только ПОСЛЕ выбора) -->
+        <div id="file-chip" class="file-chip" role="status" aria-live="polite" hidden>
+          <div class="file-chip__meta">
+            <div id="file-name" class="file-chip__name"></div>
+            <div id="file-size" class="file-chip__size"></div>
+          </div>
+          <!-- Справа: крестик в том же стиле -->
+          <button id="clear-file" class="file-chip__clear" type="button" aria-label="Очистить выбранный файл">
+            <svg class="icon-24" viewBox="0 0 24 24" width="16" height="16" focusable="false" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Подсказка показывается ТОЛЬКО когда файла нет -->
+        <div id="file-hint" class="file-hint" data-i18n="no_file">Файл не выбран</div>
+
+        <div class="form-row form-row--gap-after">
+          <label id="model-label" for="model" class="label" data-i18n="model_label">Модель</label>
+          <div class="select-field" id="model-field">
+            <button type="button"
+                    id="model-combo"
+                    class="combo"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                    aria-controls="model-list"
+                    aria-labelledby="model-label model-combo">
+              <span class="combo__value"></span>
+            </button>
+            <ul id="model-list" class="combo__list" role="listbox" hidden></ul>
+            <!-- Нативный селект остаётся для мобильных и доступности -->
+            <div class="native-select">
+              <select class="select" id="model" name="model">
+                <option value="yolo" selected data-i18n="model_yolo">YOLOv8n</option>
+                <option value="unet" data-i18n="model_unet">U‑Net</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="conf" class="label" data-i18n="conf_label">Порог уверенности</label>
+          <div class="range" id="conf-range" aria-label="Confidence threshold">
+            <input id="conf" class="range__input" type="range" min="0" max="1" step="0.01" value="0.25" />
+            <div class="range__progress" aria-hidden="true"></div>
+            <output id="conf-bubble" class="range__bubble" for="conf">0.25</output>
+            <div class="range__scale" aria-hidden="true">
+              <span>0</span><span>0.25</span><span>0.50</span><span>0.75</span><span>1.00</span>
+            </div>
+          </div>
+          <div class="range-value"><span id="conf-val">0.25</span></div>
+        </div>
+
+        <button id="run-btn" class="btn btn--primary" disabled data-i18n="run_btn">Запустить детекцию</button>
+        <div id="error" class="error" hidden></div>
+      </div>
+
+      <!-- Правая колонка -->
+      <div class="card">
+        <h2 class="card__title" data-i18n="result_title">Результат</h2>
+
+        <!-- Панель масштабирования: 4 кнопки одного размера и стиля -->
+        <div class="zoom-toolbar" role="toolbar" aria-label="Zoom controls">
+          <div class="zoom-toolbar__left">
+            <button id="zoom-out" class="chip chip--primary chip--square" title="-" aria-label="Уменьшить">−</button>
+            <button id="zoom-in" class="chip chip--primary chip--square" title="+" aria-label="Увеличить">+</button>
+            <button id="zoom-fit" class="chip chip--primary" data-i18n="fit2" aria-label="Уместить">Уместить</button>
+            <button id="zoom-100" class="chip chip--primary" data-i18n="one_to_one" aria-label="1:1">1:1</button>
+          </div>
+          <div class="zoom-toolbar__right">
+            <div class="zoom-value"><span id="zoom-value">100%</span></div>
+          </div>
+        </div>
+
+        <!-- Просмотрщик + skeleton -->
+        <div class="stage-wrapper">
+          <div id="stage" class="stage">
+            <div id="zoom-viewport" class="zoom-viewport" aria-busy="false">
+              <div id="zoom-canvas" class="zoom-canvas">
+                <img id="result-img" src="" alt="" draggable="false" />
+              </div>
+
+              <!-- Skeleton overlay -->
+              <div id="skeleton" class="skeleton" hidden aria-hidden="true">
+                <div class="skeleton__block skeleton__block--full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Мета — 4 значения в одну строку -->
+        <div id="meta" class="meta meta--row">
+          <div class="meta__item"><span data-i18n="model_used">Модель:</span> <strong id="meta-model">—</strong></div>
+          <div class="meta__item"><span data-i18n="img_size">Размер:</span> <strong id="meta-size">—</strong></div>
+          <div class="meta__item"><span data-i18n="conf_used">Порог:</span> <strong id="meta-conf">—</strong></div>
+          <div class="meta__item"><span data-i18n="time_used">Время:</span> <strong id="meta-time">—</strong></div>
+        </div>
+
+        <div>
+          <h3 class="table-title" data-i18n="bboxes_title">Найденные объекты</h3>
+          <div class="table-wrap">
+            <table class="table" id="bboxes-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th data-i18n="label_col">Класс</th>
+                  <th>X1</th><th>Y1</th><th>X2</th><th>Y2</th>
+                  <th data-i18n="w_col">W</th><th data-i18n="h_col">H</th>
+                  <th data-i18n="conf_col">Conf</th>
+                </tr>
+              </thead>
+              <tbody id="bboxes-body">
+                <tr class="muted"><td colspan="9" data-i18n="no_detections">Объекты не обнаружены</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <!-- формулировка подвала через локаль -->
+      <div data-i18n="footer">Проектно‑технологическая практика • 2025 • «Нейросетевые алгоритмы мониторинга лесных пожаров»</div>
+
+      <!-- ССЫЛКА НА GITHUB (тот же репозиторий) -->
+      <a class="gh" id="gh-footer"
+        href="https://gitflic.ru/project/bmstu-iu9/ptp2025-x4-ascii"
+        target="_blank" rel="noopener"
+        aria-label="GitFlic" data-i18n="gitflic">GitFlic</a>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
