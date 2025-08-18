@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
+import torch.jit
 import numpy as np
 
 try:
@@ -196,7 +197,7 @@ class ModelHub:
             pass
         # 2) Полный nn.Module
         try:
-            m = torch.load(path, map_location=self.device)
+            m = torch.load(path, map_location=self.device, weights_only=False)
             if hasattr(m, "eval"):
                 m.eval()
                 return m
