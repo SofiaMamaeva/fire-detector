@@ -27,7 +27,6 @@ def encode_image_base64(img_bgr: np.ndarray, ext="jpg") -> str:
     """
     Кодирует изображение в data URL (base64). ext: 'jpg' | 'png'.
     """
-    import cv2
     ok, buf = cv2.imencode(f".{ext}", img_bgr)
     if not ok:
         raise RuntimeError("Failed to encode image")
