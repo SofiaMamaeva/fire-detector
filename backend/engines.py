@@ -3,10 +3,15 @@ from __future__ import annotations
 import os
 from typing import List, Dict, Any, Optional, Tuple
 
-import torch
+import torch, cv2
 import torch.nn.functional as F
 import torch.jit
 import numpy as np
+
+try:
+    from torchvision.ops import nms as tv_nms
+except Exception:
+    tv_nms = None
 
 try:
     from ultralytics import YOLO
@@ -22,6 +27,10 @@ def _nms_xyxy(boxes: List[Tuple[float,float,float,float]], scores: List[float], 
     """Простой NMS без torchvision (для малых чисел детекций)."""
     if not boxes:
         return []
+    if tv_nms is not None:
+        b = torch.tensor(boxes, dtype=torch.float32)
+        s = torch.tensor(scores, dtype=torch.float32)
+        return tv_nms(b, s, iou_thr).tolist()
     idxs = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
     keep: List[int] = []
     def iou(a, b):
@@ -210,7 +219,7 @@ class ModelHub:
                 f"torch.load error: {e_full}"
             )
 
-    def infer_unet(self, img_bgr: np.ndarray, conf: float = 0.25) -> List[Dict[str, Any]]:
+    def _infer_unet_single(self, img_bgr: np.ndarray, conf: float) -> List[Dict[str, Any]]:
         if self.unet is None:
             raise RuntimeError("U-Net model is not available. Put weights into models/model_unet_anchor_free.pth")
 
@@ -231,16 +240,19 @@ class ModelHub:
         pad_w_total = orig_w + pad_w
         # <---
 
-        with torch.no_grad():
+        with torch.inference_mode():
             out = self.unet(ten)
 
         # Нормализация формата вывода
         if isinstance(out, (list, tuple)):
             if len(out) == 3:
                 heat, wh, offset = out
-                dets = _decode_anchor_free(heat, wh, offset,
-                                        img_h=pad_h_total, img_w=pad_w_total,
-                                        conf_thr=conf)
+                topk = int(os.getenv("UNET_TOPK", "512"))
+                dets = _decode_anchor_free(
+                    heat, wh, offset,
+                    img_h=pad_h_total, img_w=pad_w_total,
+                    conf_thr=conf, topk=topk, nms_iou=0.5
+                )
             elif len(out) == 1:
                 out = out[0]
                 dets = []
@@ -249,9 +261,12 @@ class ModelHub:
         elif isinstance(out, dict):
             if all(k in out for k in ("heatmap", "wh", "offset")):
                 heat, wh, offset = out["heatmap"], out["wh"], out["offset"]
-                dets = _decode_anchor_free(heat, wh, offset,
-                                        img_h=pad_h_total, img_w=pad_w_total,
-                                        conf_thr=conf)
+                topk = int(os.getenv("UNET_TOPK", "512"))
+                dets = _decode_anchor_free(
+                    heat, wh, offset,
+                    img_h=pad_h_total, img_w=pad_w_total,
+                    conf_thr=conf, topk=topk, nms_iou=0.5
+                )
             elif all(k in out for k in ("boxes", "scores")):
                 boxes = out["boxes"].detach().cpu().numpy()
                 scores = out["scores"].detach().cpu().numpy()
@@ -283,3 +298,37 @@ class ModelHub:
         # <---
 
         return dets
+
+    def infer_unet(self, img_bgr: np.ndarray, conf: float = 0.25) -> List[Dict[str, Any]]:
+        # Тайловый режим включается переменными окружения (по умолчанию — выкл.)
+        tile = int(os.getenv("FD_UNET_TILE", "0"))          # напр., 1024
+        overlap = int(os.getenv("FD_UNET_OVERLAP", "128"))  # перекрытие
+        if tile and max(img_bgr.shape[:2]) > tile:
+            H, W = img_bgr.shape[:2]
+            step = max(32, tile - overlap)                  # шаг сетки
+            all_boxes: List[Dict[str, Any]] = []
+            for y0 in range(0, H, step):
+                for x0 in range(0, W, step):
+                    y1 = min(y0 + tile, H)
+                    x1 = min(x0 + tile, W)
+                    crop = img_bgr[y0:y1, x0:x1]
+                    dets_t = self._infer_unet_single(crop, conf=conf)
+                    # переносим координаты тайла в глобальные
+                    for d in dets_t:
+                        d["x1"] += x0; d["x2"] += x0
+                        d["y1"] += y0; d["y2"] += y0
+                    all_boxes.extend(dets_t)
+            # финальный NMS по всем тайлам
+            boxes = [(d["x1"], d["y1"], d["x2"], d["y2"]) for d in all_boxes]
+            scores = [float(d.get("conf", 0.0)) for d in all_boxes]
+            keep = _nms_xyxy(boxes, scores, iou_thr=0.5)
+            dets = [all_boxes[i] for i in keep]
+            # финальный клиппинг
+            for d in dets:
+                d["x1"] = float(max(0.0, min(d["x1"], W - 1)))
+                d["y1"] = float(max(0.0, min(d["y1"], H - 1)))
+                d["x2"] = float(max(0.0, min(d["x2"], W - 1)))
+                d["y2"] = float(max(0.0, min(d["y2"], H - 1)))
+            return dets
+        else:
+            return self._infer_unet_single(img_bgr, conf=conf)

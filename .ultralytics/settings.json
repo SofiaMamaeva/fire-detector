@@ -1,0 +1,21 @@
+{
+  "settings_version": "0.0.6",
+  "datasets_dir": "/opt/datasets",
+  "weights_dir": "/opt/fire-detector/weights",
+  "runs_dir": "/opt/fire-detector/runs",
+  "uuid": "79f93b9ae192e19a6ca4d5c94178109fccb856d06b7be273bf0bae5d2218010c",
+  "sync": true,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": true,
+  "comet": true,
+  "dvc": true,
+  "hub": true,
+  "mlflow": true,
+  "neptune": true,
+  "raytune": true,
+  "tensorboard": false,
+  "wandb": false,
+  "vscode_msg": true,
+  "openvino_msg": true
+}

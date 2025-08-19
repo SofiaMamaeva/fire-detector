@@ -1,16 +1,18 @@
 from __future__ import annotations
 from typing import List, Dict, Any
+import os
 import cv2
 import base64
 import numpy as np
 
-def draw_bboxes(img_bgr: np.ndarray, dets: List[Dict[str, Any]], color=(0, 204, 102)) -> np.ndarray:
+def draw_bboxes(img_bgr: np.ndarray, dets: List[Dict[str, Any]], color=(255, 77, 124)) -> np.ndarray:
     """
     Рисует рамки и подписи на копии изображения. Возвращает BGR.
     """
     vis = img_bgr.copy()
     for i, d in enumerate(dets, start=1):
         x1, y1, x2, y2 = map(int, [d["x1"], d["y1"], d["x2"], d["y2"]])
+        color = tuple(map(int, d.get("color", color)))
         conf = float(d.get("conf", 0.0))
         label = d.get("label", "Fire")
         cv2.rectangle(vis, (x1, y1), (x2, y2), color, 2)
