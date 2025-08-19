@@ -1,0 +1,21 @@
+[Unit]
+Description=Fire Detector (FastAPI + Uvicorn)
+After=network.target
+
+[Service]
+Environment="PATH=/opt/fire-detector/.venv/bin"
+Environment="FD_MAX_SIDE=1280" "FD_MAX_PIXELS=2000000" "FD_MAX_UPLOAD_BYTES=41943040" 
+Environment="OMP_NUM_THREADS=1" "MKL_NUM_THREADS=1"
+Environment="FD_UNET_TILE=1024" "FD_UNET_OVERLAP=128"
+Environment="TORCH_NUM_THREADS=1" "TORCH_NUM_INTEROP_THREADS=1"
+Environment="FD_UNET_TILE=768" "FD_UNET_OVERLAP=96" "UNET_TOPK=256"
+Environment="FD_MAX_SIDE=1152" "FD_MAX_PIXELS=1500000"
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/fire-detector
+ExecStart=/opt/fire-detector/.venv/bin/uvicorn backend.main:app --host 127.0.0.1 --port 8000 --workers 1 --timeout-keep-alive 65
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
