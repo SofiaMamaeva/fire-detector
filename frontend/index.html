@@ -14,7 +14,6 @@
       <div class="brand">
         <div class="brand__text">
           <div class="brand__title" data-i18n="title">Fire Detection</div>
-          <!-- Подзаголовок студенческого проекта -->
           <div class="brand__subtitle" data-i18n="subtitle">
             Нейросетевые алгоритмы мониторинга лесных пожаров • YOLOv8n & U-Net
           </div>
@@ -22,7 +21,6 @@
       </div>
 
       <div class="header__controls">
-        <!-- ССЫЛКА НА GITHUB (замените href на ваш репозиторий) -->
         <a class="gh" id="gh-header"
           href="https://gitflic.ru/project/bmstu-iu9/ptp2025-x4-ascii"
           target="_blank" rel="noopener"
@@ -38,11 +36,9 @@
 
   <main class="container main">
     <section class="panel grid">
-      <!-- Левая колонка -->
       <div class="card">
         <h2 class="card__title" data-i18n="upload_title">Загрузите изображение</h2>
 
-        <!-- Дропзона стала доступной кнопкой -->
         <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="Загрузить файл: нажмите Enter или пробел, либо перетащите изображение">
           <div class="dropzone__icon">⬆︎</div>
           <div class="dropzone__text">
@@ -52,13 +48,11 @@
           <input id="file-input" type="file" accept="image/*" hidden />
         </div>
 
-        <!-- Современный статус файла (создаётся только ПОСЛЕ выбора) -->
         <div id="file-chip" class="file-chip" role="status" aria-live="polite" hidden>
           <div class="file-chip__meta">
             <div id="file-name" class="file-chip__name"></div>
             <div id="file-size" class="file-chip__size"></div>
           </div>
-          <!-- Справа: крестик в том же стиле -->
           <button id="clear-file" class="file-chip__clear" type="button" aria-label="Очистить выбранный файл">
             <svg class="icon-24" viewBox="0 0 24 24" width="16" height="16" focusable="false" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
@@ -66,7 +60,6 @@
           </button>
         </div>
 
-        <!-- Подсказка показывается ТОЛЬКО когда файла нет -->
         <div id="file-hint" class="file-hint" data-i18n="no_file">Файл не выбран</div>
 
         <div class="form-row form-row--gap-after">
@@ -82,7 +75,6 @@
               <span class="combo__value"></span>
             </button>
             <ul id="model-list" class="combo__list" role="listbox" hidden></ul>
-            <!-- Нативный селект остаётся для мобильных и доступности -->
             <div class="native-select">
               <select class="select" id="model" name="model">
                 <option value="yolo" selected data-i18n="model_yolo">YOLOv8n</option>
@@ -109,11 +101,9 @@
         <div id="error" class="error" hidden></div>
       </div>
 
-      <!-- Правая колонка -->
       <div class="card">
         <h2 class="card__title" data-i18n="result_title">Результат</h2>
 
-        <!-- Панель масштабирования: 4 кнопки одного размера и стиля -->
         <div class="zoom-toolbar" role="toolbar" aria-label="Zoom controls">
           <div class="zoom-toolbar__left">
             <button id="zoom-out" class="chip chip--primary chip--square" title="-" aria-label="Уменьшить">−</button>
@@ -126,7 +116,6 @@
           </div>
         </div>
 
-        <!-- Просмотрщик + skeleton -->
         <div class="stage-wrapper">
           <div id="stage" class="stage">
             <div id="zoom-viewport" class="zoom-viewport" aria-busy="false">
@@ -134,7 +123,6 @@
                 <img id="result-img" src="" alt="" draggable="false" />
               </div>
 
-              <!-- Skeleton overlay -->
               <div id="skeleton" class="skeleton" hidden aria-hidden="true">
                 <div class="skeleton__block skeleton__block--full"></div>
               </div>
@@ -142,7 +130,6 @@
           </div>
         </div>
 
-        <!-- Мета — 4 значения в одну строку -->
         <div id="meta" class="meta meta--row">
           <div class="meta__item"><span data-i18n="model_used">Модель:</span> <strong id="meta-model">—</strong></div>
           <div class="meta__item"><span data-i18n="img_size">Размер:</span> <strong id="meta-size">—</strong></div>
@@ -176,10 +163,8 @@
 
   <footer class="footer">
     <div class="container footer__inner">
-      <!-- формулировка подвала через локаль -->
       <div data-i18n="footer">Проектно‑технологическая практика • 2025 • «Нейросетевые алгоритмы мониторинга лесных пожаров»</div>
 
-      <!-- ССЫЛКА НА GITHUB (тот же репозиторий) -->
       <a class="gh" id="gh-footer"
         href="https://gitflic.ru/project/bmstu-iu9/ptp2025-x4-ascii"
         target="_blank" rel="noopener"
