@@ -1,4 +1,3 @@
-# backend/engines.py
 from __future__ import annotations
 import os
 from typing import List, Dict, Any, Optional, Tuple
@@ -24,7 +23,6 @@ def _to_device() -> str:
 
 
 def _nms_xyxy(boxes: List[Tuple[float,float,float,float]], scores: List[float], iou_thr: float = 0.5) -> List[int]:
-    """Простой NMS без torchvision (для малых чисел детекций)."""
     if not boxes:
         return []
     if tv_nms is not None:
@@ -58,26 +56,18 @@ def _decode_anchor_free(heat: torch.Tensor,
                         conf_thr: float = 0.30,
                         topk: Optional[int] = None,
                         nms_iou: float = 0.5) -> List[Dict[str, Any]]:
-    """
-    Декодирует головы anchor-free вида (heatmap, wh, offset) в список боксов.
-    Ожидаемые формы: heat=[B,C,Hh,Wh], wh=[B,2,Hh,Wh], offset=[B,2,Hh,Wh].
-    """
     assert heat.ndim == 4 and wh.ndim == 4 and offset.ndim == 4, "Unexpected tensor dims"
 
-    # Сигмоида к тепловой карте
     heat = heat.sigmoid()
 
     B, C, Hh, Wh = heat.shape
     assert B >= 1, "Batch must be >= 1"
 
-    # Локальные максимумы + порог
     hmax = F.max_pool2d(heat, kernel_size=3, stride=1, padding=1)
     peaks = (heat == hmax) & (heat > conf_thr)
 
-    # ВАЖНО: порядок индексов для 4D тензора → (b, c, y, x)
     b_idx, c_idx, y_idx, x_idx = torch.where(peaks)
 
-    # Берём только batch==0 для демо (мы и так гоним по одному изображению)
     if b_idx.numel() == 0:
         return []
 
@@ -89,7 +79,6 @@ def _decode_anchor_free(heat: torch.Tensor,
     if c_idx.numel() == 0:
         return []
 
-    # Опционально top-k по score
     scores_all = heat[0, c_idx, y_idx, x_idx]
     if topk is not None and scores_all.numel() > topk:
         topk_sel = torch.topk(scores_all, k=topk).indices
@@ -98,22 +87,18 @@ def _decode_anchor_free(heat: torch.Tensor,
         x_idx = x_idx[topk_sel]
         scores_all = scores_all[topk_sel]
 
-    # Пересчёт в пиксели: stride как отношение исходного размера к размеру карты
     stride_x = img_w / float(Wh)
     stride_y = img_h / float(Hh)
 
     boxes_xyxy: List[Tuple[float,float,float,float]] = []
     scores: List[float] = []
 
-    # Собираем боксы
     for c, y, x, s in zip(c_idx.tolist(), y_idx.tolist(), x_idx.tolist(), scores_all.tolist()):
-        # Смещения и размеры в "клетках"
         off_x = float(offset[0, 0, y, x].item())
         off_y = float(offset[0, 1, y, x].item())
         w_cell = float(wh[0, 0, y, x].item())
         h_cell = float(wh[0, 1, y, x].item())
 
-        # Центр и размеры в пикселях
         cx = (x + off_x) * stride_x
         cy = (y + off_y) * stride_y
         w_pix = max(0.0, w_cell * stride_x)
@@ -124,7 +109,6 @@ def _decode_anchor_free(heat: torch.Tensor,
         x2 = min(float(img_w - 1), cx + w_pix / 2.0)
         y2 = min(float(img_h - 1), cy + h_pix / 2.0)
 
-        # Скипаем вырожденные
         if x2 <= x1 or y2 <= y1:
             continue
 
@@ -134,7 +118,6 @@ def _decode_anchor_free(heat: torch.Tensor,
     if not boxes_xyxy:
         return []
 
-    # NMS (простой, без torchvision)
     keep = _nms_xyxy(boxes_xyxy, scores, iou_thr=nms_iou)
 
     dets: List[Dict[str, Any]] = []
@@ -143,20 +126,18 @@ def _decode_anchor_free(heat: torch.Tensor,
         dets.append({
             "x1": x1, "y1": y1, "x2": x2, "y2": y2,
             "conf": scores[i],
-            "label": "Fire"  # один класс; при множественных добавьте маппер
+            "label": "Fire"
         })
     return dets
 
 
 
 class ModelHub:
-    """Две модели: YOLOv8n и U-Net anchor-free (TorchScript или nn.Module)."""
     def __init__(self, yolo_path: str, unet_path: str):
         self.device = _to_device()
         self.yolo = self._load_yolo(yolo_path) if yolo_path and os.path.exists(yolo_path) else None
         self.unet = self._load_unet(unet_path) if unet_path and os.path.exists(unet_path) else None
 
-    # ---------- YOLO ----------
     def _load_yolo(self, path: str):
         if YOLO is None:
             raise RuntimeError("Ultralytics YOLO is not installed")
@@ -189,22 +170,13 @@ class ModelHub:
             })
         return dets
 
-    # ---------- U-NET ----------
     def _load_unet(self, path: str):
-        """
-        Порядок:
-          1) torch.jit.load (TorchScript)
-          2) torch.load (pickled nn.Module)
-          Если это чекпойнт/стейт‑дикт — его нельзя восстановить без кода архитектуры → используйте экспорт.
-        """
-        # 1) TorchScript
         try:
             m = torch.jit.load(path, map_location=self.device)
             m.eval()
             return m
         except Exception:
             pass
-        # 2) Полный nn.Module
         try:
             m = torch.load(path, map_location=self.device, weights_only=False)
             if hasattr(m, "eval"):
@@ -229,21 +201,17 @@ class ModelHub:
         ten = torch.from_numpy(img_rgb).permute(2, 0, 1).float().unsqueeze(0) / 255.0
         ten = ten.to(self.device)
 
-        # ---> NEW: паддинг до кратности 32 (право/низ), чтобы UNet не ломался на нечётных размерах
         pad_mult = 32
         pad_h = (-orig_h) % pad_mult
         pad_w = (-orig_w) % pad_mult
         if pad_h or pad_w:
-            # F.pad: (left, right, top, bottom)
             ten = F.pad(ten, (0, pad_w, 0, pad_h), mode="replicate")
         pad_h_total = orig_h + pad_h
         pad_w_total = orig_w + pad_w
-        # <---
 
         with torch.inference_mode():
             out = self.unet(ten)
 
-        # Нормализация формата вывода
         if isinstance(out, (list, tuple)):
             if len(out) == 3:
                 heat, wh, offset = out
@@ -289,23 +257,20 @@ class ModelHub:
         else:
             dets = []
 
-        # ---> NEW: клиппинг в границы оригинального изображения (срезаем эффект паддинга)
         for d in dets:
             d["x1"] = float(max(0.0, min(d["x1"], orig_w - 1)))
             d["y1"] = float(max(0.0, min(d["y1"], orig_h - 1)))
             d["x2"] = float(max(0.0, min(d["x2"], orig_w - 1)))
             d["y2"] = float(max(0.0, min(d["y2"], orig_h - 1)))
-        # <---
 
         return dets
 
     def infer_unet(self, img_bgr: np.ndarray, conf: float = 0.25) -> List[Dict[str, Any]]:
-        # Тайловый режим включается переменными окружения (по умолчанию — выкл.)
-        tile = int(os.getenv("FD_UNET_TILE", "0"))          # напр., 1024
-        overlap = int(os.getenv("FD_UNET_OVERLAP", "128"))  # перекрытие
+        tile = int(os.getenv("FD_UNET_TILE", "0"))
+        overlap = int(os.getenv("FD_UNET_OVERLAP", "128"))
         if tile and max(img_bgr.shape[:2]) > tile:
             H, W = img_bgr.shape[:2]
-            step = max(32, tile - overlap)                  # шаг сетки
+            step = max(32, tile - overlap)
             all_boxes: List[Dict[str, Any]] = []
             for y0 in range(0, H, step):
                 for x0 in range(0, W, step):
@@ -313,17 +278,14 @@ class ModelHub:
                     x1 = min(x0 + tile, W)
                     crop = img_bgr[y0:y1, x0:x1]
                     dets_t = self._infer_unet_single(crop, conf=conf)
-                    # переносим координаты тайла в глобальные
                     for d in dets_t:
                         d["x1"] += x0; d["x2"] += x0
                         d["y1"] += y0; d["y2"] += y0
                     all_boxes.extend(dets_t)
-            # финальный NMS по всем тайлам
             boxes = [(d["x1"], d["y1"], d["x2"], d["y2"]) for d in all_boxes]
             scores = [float(d.get("conf", 0.0)) for d in all_boxes]
             keep = _nms_xyxy(boxes, scores, iou_thr=0.5)
             dets = [all_boxes[i] for i in keep]
-            # финальный клиппинг
             for d in dets:
                 d["x1"] = float(max(0.0, min(d["x1"], W - 1)))
                 d["y1"] = float(max(0.0, min(d["y1"], H - 1)))
