@@ -1,5 +1,4 @@
 const els = {
-  // Загрузка
   dropzone: document.getElementById('dropzone'),
   fileInput: document.getElementById('file-input'),
   fileHint: document.getElementById('file-hint'),
@@ -8,17 +7,14 @@ const els = {
   fileSize: document.getElementById('file-size'),
   clearFile: document.getElementById('clear-file'),
 
-  // Кнопки
   runBtn: document.getElementById('run-btn'),
 
-  // Параметры
   model: document.getElementById('model'),
   conf: document.getElementById('conf'),
   confVal: document.getElementById('conf-val'),
   confRange: document.getElementById('conf-range'),
   confBubble: document.getElementById('conf-bubble'),
 
-  // Viewer
   zoomViewport: document.getElementById('zoom-viewport'),
   zoomCanvas: document.getElementById('zoom-canvas'),
   resultImg: document.getElementById('result-img'),
@@ -29,7 +25,6 @@ const els = {
   zoomValue: document.getElementById('zoom-value'),
   skeleton: document.getElementById('skeleton'),
 
-  // Мета/таблица/прочее
   metaModel: document.getElementById('meta-model'),
   metaSize: document.getElementById('meta-size'),
   metaConf: document.getElementById('meta-conf'),
@@ -37,7 +32,6 @@ const els = {
   bboxesBody: document.getElementById('bboxes-body'),
   error: document.getElementById('error'),
 
-  // i18n
   langRU: document.getElementById('lang-ru'),
   langEN: document.getElementById('lang-en'),
 };
@@ -45,7 +39,7 @@ const els = {
 let currentFile = null;
 let currentLang = localStorage.getItem('lang') || 'ru';
 let i18n = {};
-let zoomEnabled = false; // зум доступен только при наличии изображения
+let zoomEnabled = false;
 
 ['dragstart','selectstart'].forEach(type => {
   els.zoomViewport.addEventListener(type, e => e.preventDefault());
@@ -53,7 +47,6 @@ let zoomEnabled = false; // зум доступен только при нали
   els.resultImg.addEventListener(type, e => e.preventDefault());
 });
 
-// ---------------- I18N ----------------
 async function loadLocale(lang) {
   const res = await fetch(`/static/locales/${lang}.json`);
   i18n = await res.json();
@@ -69,7 +62,6 @@ function applyI18n() {
   });
 }
 
-// ---------------- Helpers ----------------
 function humanSize(bytes) {
   if (!Number.isFinite(bytes)) return '';
   const u = ['B','KB','MB','GB']; let i = 0; let v = bytes;
@@ -84,26 +76,21 @@ function setFile(file) {
     els.fileName.textContent = currentFile.name;
     els.fileSize.textContent = humanSize(currentFile.size);
 
-    // Показать статус‑пилюлю, скрыть подсказку
     els.fileChip.hidden = false;
     els.fileHint.hidden = true;
 
     els.runBtn.disabled = false;
   } else {
-    // Полностью очистить UI статуса
     els.fileChip.hidden = true;
     els.fileName.textContent = '';
     els.fileSize.textContent = '';
 
-    // Показать подсказку «Файл не выбран»
     els.fileHint.hidden = false;
     els.fileHint.setAttribute('data-i18n','no_file');
     els.fileHint.textContent = i18n['no_file'] || 'No file selected';
 
-    // Очистить сам input[type=file]
-    els.fileInput.value = ""; // надёжный кроссбраузерный сброс.
+    els.fileInput.value = "";
 
-    // Заблокировать запуск
     els.runBtn.disabled = true;
   }
   els.error.hidden = true;
@@ -117,12 +104,9 @@ function setLoading(on) {
   if (on) setZoomEnabled(false);
 }
 
-// -------- Очистка результата (viewer + мета + таблица) --------
 function clearResults() {
-  // стоп загрузки/скелета (если был)
   setLoading(false);
 
-  // Очистить изображение и вернуть зум в исходное состояние
   els.resultImg.removeAttribute('src');
   Z.scale = 1; Z.fit = 1; Z.x = 0; Z.y = 0;
   els.zoomCanvas.style.transform = 'translate(0px, 0px) scale(1)';
@@ -130,13 +114,11 @@ function clearResults() {
   els.zoomViewport.setAttribute('aria-busy', 'false');
   setZoomEnabled(false);
 
-  // Сбросить мета‑инфо
   els.metaModel.textContent = '—';
   els.metaSize.textContent  = '—';
   els.metaConf.textContent  = '—';
   els.metaTime.textContent  = '—';
 
-  // Таблица: показать «детекции отсутствуют»
   els.bboxesBody.innerHTML = '';
   const tr = document.createElement('tr');
   tr.className = 'muted';
@@ -146,20 +128,16 @@ function clearResults() {
   tr.appendChild(td);
   els.bboxesBody.appendChild(tr);
 
-  // Ошибки — скрыть/очистить
   els.error.textContent = '';
   els.error.hidden = true;
 
-  // Обновить визуал слайдера (пузырь/прогресс) на всякий случай
   if (typeof updateRangeProgress === 'function') updateRangeProgress();
 
-  // Если внедряли «сворачивание таблицы», синхронизируем кнопку
   if (typeof updateTableToggle === 'function') {
     try { updateTableToggle(); } catch {}
   }
 }
 
-// ---------------- Drag & Drop / Keyboard ----------------
 ['dragenter','dragover'].forEach(evt => {
   els.dropzone.addEventListener(evt, e => {
     e.preventDefault();
@@ -189,7 +167,6 @@ els.fileInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (file) setFile(file);
 });
-// Очистка по крестику: делаем фокус обратно на зону, чтобы UX был плавным
 els.clearFile.addEventListener('click', (e) => {
   e.preventDefault();
   setFile(null);
@@ -199,32 +176,26 @@ els.clearFile.addEventListener('click', (e) => {
   els.dropzone.focus();
 });
 
-// ---------------- Slider UI ----------------
-// ---------------- Slider UI ----------------
 function updateRangeProgress() {
   const min = parseFloat(els.conf.min || '0');
   const max = parseFloat(els.conf.max || '1');
   const val = parseFloat(els.conf.value);
-  const t = (val - min) / (max - min); // 0..1
+  const t = (val - min) / (max - min);
 
   const wrap = els.confRange || els.conf.parentElement;
   const wrapW = wrap.clientWidth;
   const cs = getComputedStyle(wrap);
   const thumb = parseFloat(cs.getPropertyValue('--thumb')) || 22;
 
-  // Центр ползунка в пикселях относительно контейнера
   const pxCenter = (t * (wrapW - thumb)) + (thumb / 2);
 
-  // Обновляем текст заранее, чтобы корректно измерить ширину пузыря
   if (els.confBubble) els.confBubble.textContent = val.toFixed(2);
   els.confVal.textContent = val.toFixed(2);
 
-  // Кламп пузыря, чтобы он не выходил за пределы слайдера
   let bubbleLeft = pxCenter;
   if (els.confBubble) {
     const bubbleW = els.confBubble.offsetWidth || 0;
     const half = bubbleW / 2;
-    // небольшие поля безопасности в 2px
     bubbleLeft = Math.min(Math.max(pxCenter, half + 2), Math.max(wrapW - half - 2, 0));
   }
 
@@ -241,7 +212,6 @@ window.addEventListener('resize', () => {
 });
 updateRangeProgress();
 
-// ---------------- Zoom Viewer ----------------
 const Z = { scale: 1, fit: 1, x: 0, y: 0, minFactor: 0.5, maxFactor: 10 };
 function hasImage() { return !!(els.resultImg.src && els.resultImg.naturalWidth && els.resultImg.naturalHeight); }
 function setZoomEnabled(on) {
@@ -249,7 +219,6 @@ function setZoomEnabled(on) {
   els.zoomViewport.classList.toggle('zoom--disabled', !zoomEnabled);
   [els.zoomIn, els.zoomOut, els.zoomFit, els.zoom100].forEach(btn => (btn.disabled = !zoomEnabled));
 
-  // Новое: затемняем плашку "100%" так же, как кнопки
   const wrap = els.zoomValue?.parentElement;
   if (wrap) wrap.setAttribute('aria-disabled', (!zoomEnabled).toString());
 }
@@ -327,7 +296,6 @@ function fitIfLoaded() {
 }
 els.resultImg.addEventListener('load', () => {
   zoomToFit();
-  // скрываем скелет только когда картинка готова
   setLoading(false);
   setZoomEnabled(true);
 });
@@ -336,7 +304,6 @@ els.resultImg.addEventListener('error', () => {
   setLoading(false);
 });
 
-// Колёсико — зум
 els.zoomViewport.addEventListener('wheel', (e) => {
   if (!zoomEnabled) return;
   e.preventDefault();
@@ -344,7 +311,6 @@ els.zoomViewport.addEventListener('wheel', (e) => {
   zoomBy(factor, e.clientX, e.clientY);
 }, { passive: false });
 
-// Панорамирование и пинч
 let isPanning = false,
   lastX = 0,
   lastY = 0;
@@ -353,7 +319,7 @@ let pinchStart = null;
 
 els.zoomViewport.addEventListener('pointerdown', (e) => {
   if (!zoomEnabled) return;
-  e.preventDefault(); // не даём браузеру начинать выделение/drag
+  e.preventDefault();
   els.zoomViewport.setPointerCapture(e.pointerId);
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (activePointers.size === 1) {
@@ -405,7 +371,6 @@ function endPointer(e) {
   els.zoomViewport.addEventListener(type, endPointer)
 );
 
-// dblclick: Fit <-> 1:1
 els.zoomViewport.addEventListener('dblclick', (e) => {
   if (!zoomEnabled) return;
   const nearFit = Math.abs(Z.scale - Z.fit) / Z.fit < 0.05;
@@ -413,7 +378,6 @@ els.zoomViewport.addEventListener('dblclick', (e) => {
   else zoomToFit();
 });
 
-// Кнопки и клавиатура
 els.zoomIn.addEventListener('click', () => {
   if (zoomEnabled) zoomBy(1.2);
 });
@@ -435,11 +399,9 @@ window.addEventListener('keydown', (e) => {
   if (e.key === '0') zoomTo1x();
 });
 
-// ---------------- Run inference ----------------
 els.runBtn.addEventListener('click', async () => {
   if (!currentFile) return;
 
-  // Показать skeleton до запроса
   setLoading(true);
   const t0 = performance.now();
 
@@ -453,10 +415,8 @@ els.runBtn.addEventListener('click', async () => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Request failed');
 
-    // картинка
     els.resultImg.src = data.image?.data || '';
     if (!els.resultImg.src) {
-      // бэкенд не прислал картинку
       setZoomEnabled(false);
       setLoading(false);
     }
@@ -467,14 +427,12 @@ els.runBtn.addEventListener('click', async () => {
     els.metaSize.textContent = `${data.image?.width} × ${data.image?.height}`;
     els.metaConf.textContent = (+data.conf).toFixed(2);
 
-    // время (бэкенд приоритетен)
     const backendMs = Number(data.time_ms ?? data.infer_time_ms ?? data.ms ?? data.time);
     const elapsedMs = Number.isFinite(backendMs) ? backendMs : (performance.now() - t0);
     els.metaTime.textContent = elapsedMs < 1000
       ? `${Math.round(elapsedMs)} ms`
       : `${(elapsedMs / 1000).toFixed(2)} s`;
 
-    // таблица bbox-ов
     els.bboxesBody.innerHTML = '';
     const dets = data.bboxes || [];
     if (!dets.length) {
@@ -499,15 +457,13 @@ els.runBtn.addEventListener('click', async () => {
       }
     }
     els.error.hidden = true;
-    // (!) setLoading(false) произойдёт на load изображения, чтобы не мигал скелет
   } catch (e) {
     els.error.textContent = e.message || String(e);
     els.error.hidden = false;
-    setLoading(false); // в случае ошибки прячем скелет немедленно
+    setLoading(false);
   }
 });
 
-// ---------------- Lang switch ----------------
 els.langRU.addEventListener('click', () => {
   currentLang = 'ru';
   localStorage.setItem('lang', 'ru');
@@ -519,14 +475,12 @@ els.langEN.addEventListener('click', () => {
   loadLocale('en');
 });
 
-// init
 loadLocale(currentLang).then(() => {
   els.confVal.textContent = (+els.conf.value).toFixed(2);
-  initModelCombo('model'); // см. п.3
-  setZoomEnabled(false); // на старте — без зума, пока нет изображения
+  initModelCombo('model');
+  setZoomEnabled(false);
 });
 
-// ---------------- Custom select (desktop only) ----------------
 function initModelCombo(selectId) {
   const select = document.getElementById(selectId);
   const field = document.getElementById(`${selectId}-field`);
@@ -536,7 +490,6 @@ function initModelCombo(selectId) {
   if (!select || !field || !combo || !list || !valueEl) return;
 
   const useCustom = window.matchMedia('(pointer: fine)').matches;
-  // (re)build список из <option>
   list.innerHTML = '';
   Array.from(select.options).forEach(opt => {
     const li = document.createElement('li');
@@ -582,7 +535,6 @@ function initModelCombo(selectId) {
       list.hidden = true;
     }
     combo.addEventListener('click', () => (open ? closeList() : openList()));
-    // Закрываем по клику ВНЕ через единый метод, чтобы сбросить флаг `open`
     document.addEventListener('pointerdown', (e) => {
       if (!field.contains(e.target)) closeList();
     });
