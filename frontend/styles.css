@@ -9,7 +9,7 @@
   --accent: #00d084;
   --error: #ff6b6b;
 
-  --chip-h: 40px; /* единая высота всех чип‑кнопок, включая −/+ */
+  --chip-h: 40px;
   --col-gap: clamp(20px, 2.8vw, 36px);
 }
 
@@ -18,7 +18,6 @@
 html, body {
   height: 100%;
   max-width: 100%;
-  /* Гарантированно без горизонтального скролла из-за переполнений/округлений */
   overflow-x: clip;
 }
 @supports not (overflow: clip) {
@@ -41,7 +40,6 @@ body::after {
 }
 .header, .main, .footer { position: relative; z-index: 1; }
 
-/* Header */
 .header {
   position: sticky; top: 0; z-index: 10;
   backdrop-filter: saturate(140%) blur(8px);
@@ -76,36 +74,31 @@ body::after {
   border-radius: inherit; background: var(--brand); z-index: -1;
 }
 
-/* Форм‑элементы используют тот же шрифт, что и документ (Inter) */
 button, input, select, textarea {
   font-family: inherit;
-  font-size: 1em; /* чтобы не увеличивался/уменьшался кегль на некоторых UA */
+  font-size: 1em;
 }
 
 
-/* Main */
 .main { padding: 28px 0; }
 
-/* Сетка всегда в один столбец */
 .grid,
 .panel.grid {
   display: grid;
-  grid-template-columns: 1fr;   /* всегда один столбец */
+  grid-template-columns: 1fr;
   row-gap: 24px;
 }
 
-/* Cards */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 18px 18px 22px;
   box-shadow: 0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.05);
-  min-width: 0;                 /* не раздвигать контейнер при длинном содержимом */
+  min-width: 0;
 }
 .card__title { margin: 2px 0 14px; font-size: 18px; font-weight: 700; }
 
-/* Dropzone */
 .dropzone {
   display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px;
   width: 100%;
@@ -117,7 +110,6 @@ button, input, select, textarea {
   outline: none;
 }
 
-/* Умный перенос подсказки — оставляем только эту версию */
 .dropzone__text {
   font-size: clamp(12px, calc(12px + 0.30vw), 15px);
   line-height: 1.3;
@@ -145,7 +137,6 @@ button, input, select, textarea {
 
 .file-hint { margin: 8px 4px 8px; font-size: 12px; color: var(--muted); }
 
-/* Чип файла */
 .file-chip {
   display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
   width: 100%;
@@ -190,11 +181,9 @@ button, input, select, textarea {
 .file-chip__size { font-weight: 600; opacity: .9; }
 .icon-24 { display: block; }
 
-/* Формы */
 .form-row { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
 .label { font-size: 12px; color: var(--muted); }
 
-/* Селект/комбобокс */
 .select-field { position: relative; min-width: 0; }
 
 @media (pointer: coarse) {
@@ -258,7 +247,6 @@ button, input, select, textarea {
 
 .range-value { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
-/* Главная кнопка */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   border-radius: 12px; padding: 12px 18px; border: 0; cursor: pointer;
@@ -271,7 +259,6 @@ button, input, select, textarea {
   box-shadow: 0 10px 24px rgba(0,0,0,.35), 0 8px 22px rgba(0,194,255,.20), 0 8px 22px rgba(124,77,255,.20);
 }
 
-/* Просмотрщик */
 .stage-wrapper {
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -306,7 +293,6 @@ button, input, select, textarea {
 .zoom-viewport, .zoom-canvas { user-select: none; -webkit-user-drag: none; }
 .zoom-viewport img { user-select: none; -webkit-user-drag: none; }
 
-/* Панель зума — разрешаем переносы на узких экранах */
 .zoom-toolbar {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; margin: 10px 0 14px;
@@ -321,7 +307,6 @@ button, input, select, textarea {
   min-width: 0;
 }
 
-/* Универсальная градиентная кнопка‑чип */
 .chip {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
   min-height: var(--chip-h); padding: 0 16px; border-radius: 999px;
@@ -337,7 +322,6 @@ button, input, select, textarea {
 .chip--square { width: var(--chip-h); padding: 0; border-radius: 14px; }
 .chip[disabled] { opacity: .5; cursor: not-allowed; }
 
-/* Индикатор масштаба выглядит «неактивным», пока нет изображения */
 .zoom-value[aria-disabled="true"] { opacity: .5; pointer-events: none; }
 
 .zoom-value {
@@ -349,13 +333,11 @@ button, input, select, textarea {
   box-shadow: 0 10px 30px rgba(124,77,255,.22), 0 10px 30px rgba(0,194,255,.22);
 }
 
-/* Range */
 .range {
   --thumb: 22px; --track-h: 12px;
   position: relative; width: 100%; height: var(--thumb);
   padding-bottom: 30px;
   overscroll-behavior-y: contain;
-  /* Важно: пузырь/шкала не могут расширить макет */
   overflow-x: clip;
 }
 @supports not (overflow: clip) {
@@ -438,7 +420,6 @@ button, input, select, textarea {
 .range__scale span:nth-child(5) { left: calc(100% - 0.50 * var(--thumb)); }
 .range-value { font-size: 12px; color: var(--muted); margin-top: 20px; text-align: left; }
 
-/* Meta & table */
 .meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -461,7 +442,7 @@ button, input, select, textarea {
 
 .table-title { margin: 8px 0; }
 .table-wrap {
-  overflow: auto;               /* локальный скролл, а не всей страницы */
+  overflow: auto;
   border: 1px solid var(--border);
   border-radius: 12px;
   max-width: 100%;
@@ -481,7 +462,6 @@ button, input, select, textarea {
   padding: 10px 12px; border-radius: 10px; font-size: 13px;
 }
 
-/* Skeleton */
 .skeleton { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; overflow: hidden; }
 .skeleton__block { position: absolute; inset: 0; background: rgba(255,255,255,.06); }
 .skeleton__block::before {
@@ -494,23 +474,19 @@ button, input, select, textarea {
   100% { background-position: 200% 0; }
 }
 
-/* Footer */
 .footer { border-top: 1px solid var(--border); margin-top: 24px; }
 .footer__inner { display: flex; align-items: center; justify-content: space-between; height: 60px; color: var(--muted); }
 
-/* Touch targets крупнее на сенсорных устройствах */
 @media (pointer: coarse) {
   .file-chip__clear { width: 48px; height: 48px; }
 }
 
-/* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
 
 .form-row--gap-after { margin-bottom: 22px; }
 
-/* Чуть больше вертикального зазора между .card на узких дисплеях */
 @media (max-width: 980px) {
   .grid { row-gap: 24px; }
 }
@@ -520,12 +496,10 @@ button, input, select, textarea {
   }
 }
 
-/* Высота viewer без «наезда» под адресную строку на iOS/Android */
 @supports (height: 100dvh) {
-  .zoom-viewport { height: clamp(240px, 58dvh, 900px); } /* безопаснее на очень узких */
+  .zoom-viewport { height: clamp(240px, 58dvh, 900px); }
 }
 
-/* Header: читаемый подзаголовок и адаптивный размер заголовка */
 .brand__title {
   font-size: clamp(16px, 2.2vw, 20px);
   line-height: 1.15;
@@ -533,13 +507,12 @@ button, input, select, textarea {
 .brand__subtitle {
   font-size: 12px;
   color: var(--muted);
-  text-wrap: balance; /* аккуратные переносы на мобильных */
+  text-wrap: balance;
   white-space: normal;
 }
 
-/* Footer: нормальная обёртка и понятная ссылка */
 .footer__inner {
-  flex-wrap: wrap;          /* не ломаемся на узких экранах */
+  flex-wrap: wrap;
   gap: 8px 12px;
 }
 .footer .gh {
@@ -562,7 +535,6 @@ button, input, select, textarea {
   transform: translateY(-1px);
 }
 
-/* Унифицированный вид ссылки на GitHub в шапке и подвале */
 .gh{
   display:inline-flex; align-items:center; justify-content:center;
   padding:8px 12px; border-radius:10px; text-decoration:none;
@@ -577,24 +549,22 @@ button, input, select, textarea {
   transform:translateY(-1px);
 }
 
-/* ===== HEADER: бренд слева, языки справа, по центру по вертикали ===== */
 .header { padding-top: max(0px, env(safe-area-inset-top)); }
 
 .header__inner{
-  /* Уходим от фиксированной высоты и переводим на grid (2 колонки) */
   display: grid;
   grid-template-columns: minmax(0,1fr) auto;
-  align-items: center;        /* <-- вертикально по центру */
+  align-items: center;
   gap: 8px 12px;
-  height: auto;               /* перебиваем height:64px из базовых стилей */
-  min-height: 64px;           /* ориентир для десктопа */
-  padding-block: 10px;        /* вертикальный ритм вместо фикс. высоты */
+  height: auto;
+  min-height: 64px;
+  padding-block: 10px;
 }
 
 .brand, .brand__text { min-width: 0; }
 .header__controls{
-  justify-self: end;          /* вправо в своей колонке */
-  align-self: center;         /* <-- по центру ячейки */
+  justify-self: end;
+  align-self: center;
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
@@ -602,37 +572,33 @@ button, input, select, textarea {
 }
 .lang-switch{ display: flex; gap: 8px; }
 
-/* Чуть компактнее зазоры на узких */
 @media (max-width: 420px){
   .header__controls{ gap: 8px; }
 }
 
-/* ===== FOOTER: на широких — текст слева, ссылка справа; на узких — столбиком ===== */
 .footer { padding-bottom: max(0px, env(safe-area-inset-bottom)); }
 
 .footer__inner{
-  /* Перебиваем фикс. высоту и оставляем обычный flex */
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
-  height: auto;               /* перебиваем height:60px */
+  height: auto;
   min-height: 56px;
   padding-block: 10px;
 }
 
-/* Mobile: ставим столбиком и выравниваем по левому краю */
 @media (max-width: 560px){
   .footer__inner{
     flex-direction: column;
     justify-content: flex-start;
-    align-items: flex-start;  /* <-- левое выравнивание */
+    align-items: flex-start;
     text-align: left;
     gap: 6px;
   }
   .footer .gh{
-    order: 2;                 /* ссылка под текстом */
-    align-self: flex-start;   /* и тоже слева */
+    order: 2;
+    align-self: flex-start;
   }
 }
 
